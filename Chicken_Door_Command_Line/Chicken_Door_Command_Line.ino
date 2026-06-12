@@ -13,7 +13,7 @@ bool CenturyBit; // Gets toggled when the year transions from 1999 to 2000 (I th
 bool printTime = false; // Toggle for printing the current date and time to the console at a 1hz rate
 
 //1d array makes filling EEPROM easy, this array and the writeEEPROM function are only needed once and then can be deleted or commented out
-const int sch1d[] PROGMEM = {60, 60, 4, 5, 255, 255, 255, 255, 255, 255, 6, 30, 19, 0, 6, 30, 19, 0, 6, 30, 19, 30, 6, 30, 20, 30, 6, 0, 21, 0, 5, 30, 21, 30, 5, 45, 21, 30, 6, 15, 21, 0, 6, 30, 20, 45, 6, 30, 19, 30, 6, 30, 19, 30, 6, 30, 19, 0};
+const int sch1d[58] = {60, 60, 4, 5, 255, 255, 255, 255, 255, 255, 6, 30, 19, 0, 6, 30, 19, 0, 6, 30, 19, 30, 6, 30, 20, 30, 6, 0, 21, 0, 5, 30, 21, 30, 5, 45, 21, 30, 6, 15, 21, 0, 6, 30, 20, 45, 6, 30, 19, 30, 6, 30, 19, 30, 6, 30, 19, 0};
 
 void writeEEPROM() {
 	for (int i = 0; i <= 57; i++)
@@ -50,6 +50,8 @@ void printMenu() {
 	Serial.println(F("(7). Get Elements In Open / Close Time Array"));
 	Serial.println(F("(8). Get EEPROM"));
 	Serial.println(F("(9). Get Door Open / Close Duration"));
+	Serial.println(F("(88). Open Door"));
+	Serial.println(F("(99). Close Door"));
 }
 
 bool errorCheckUserInput(int valueToSet, int lowLimit, int highLimit) {
@@ -80,6 +82,7 @@ void commandDoor(bool dir) {
 	int doorPin;
 	if(dir) // If true, open door
 	{
+		Serial.println(F("Door opening..."));
 		doorOpenTime = EEPROM.read(0); // Door open time is stored in EEPROM address 0
 		doorPin = EEPROM.read(2); // Door open time is stored in EEPROM address 2
 	}
@@ -87,6 +90,7 @@ void commandDoor(bool dir) {
 	{
 		doorOpenTime = EEPROM.read(1); // Door open time is stored in EEPROM address 1
 		doorPin = EEPROM.read(3); // Door open time is stored in EEPROM address 3
+		Serial.println(F("Door closing ..."));
 	}
 	
 	doorOpenTime = doorOpenTime * 1000; // Convert ms to s
@@ -94,9 +98,16 @@ void commandDoor(bool dir) {
 	digitalWrite(doorPin, HIGH); // Command motor driver to move door
 	delay(doorOpenTime); // Keep commanding for open / close duration
 	digitalWrite(doorPin, LOW);
-}
 
-//Start commenting from here
+	if(dir)
+	{
+		Serial.println(F("Door opened"));
+	}
+	else
+	{
+		Serial.println(F("Door closed"));
+	}
+}
 
 //Menu Option 1
 void setRtcTime() {
@@ -104,9 +115,9 @@ void setRtcTime() {
 	
 	Serial.println(F("	Enter hours (24 hour format)"));
 	getUserInput();
-	if(errorCheckUserInput(incomingInt, 0, 23)) //Error check hours
+	if(errorCheckUserInput(incomingInt, 0, 23)) // Error check hours
 	{
-		myRTC.setHour(incomingInt); //set hour to input
+		myRTC.setHour(incomingInt); // Set hours to input
 	}
 	else
 	{
@@ -115,9 +126,9 @@ void setRtcTime() {
 
 	Serial.println(F("	Enter minutes"));
 	getUserInput();
-	if(errorCheckUserInput(incomingInt, 0, 59)) //Error check hours
+	if(errorCheckUserInput(incomingInt, 0, 59)) // Error check minutes
 	{
-		myRTC.setMinute(incomingInt); //set hour to input
+		myRTC.setMinute(incomingInt); // Set minutes to input
 	}
 	else
 	{
@@ -126,9 +137,9 @@ void setRtcTime() {
 
 	Serial.println(F("	Enter seconds"));
 	getUserInput();
-	if(errorCheckUserInput(incomingInt, 0, 59)) //Error check hours
+	if(errorCheckUserInput(incomingInt, 0, 59)) // Error check seconds
 	{
-		myRTC.setSecond(incomingInt); //set hour to input
+		myRTC.setSecond(incomingInt); // Set seconds to input
 	}
 	else
 	{
@@ -152,7 +163,7 @@ void setEepromData() {
 	getUserInput();
 	data = incomingInt;
 
-	Serial.print(F("	Do you want to write data: ")); //Promt user confirmation
+	Serial.print(F("	Do you want to write data: ")); // Promt user confirmation
 	Serial.print(data);
 	Serial.print(F(" to memory address: "));
 	Serial.println(memoryAddress);
@@ -160,7 +171,7 @@ void setEepromData() {
 	Serial.println(F("	1 (Yes) / 0 (No)"));
 	getUserInput();
 
-	if(errorCheckUserInput(incomingInt, 0, 1)) //Get user input
+	if(errorCheckUserInput(incomingInt, 0, 1)) // Get user input
 	{
 		if(incomingInt)
 		{
@@ -185,33 +196,33 @@ void toggleAutoPrint() {
 void setRtcDate() {
 	Serial.println(F("----------------------------------------------------------------------"));
 
-	Serial.println(F("	Enter Month")); //Prompt user input
+	Serial.println(F("	Enter Month")); // Prompt user input
 	getUserInput();
-	if(errorCheckUserInput(incomingInt, 1, 12)) //Error check months
+	if(errorCheckUserInput(incomingInt, 1, 12)) // Error check months
 	{
-		myRTC.setMonth(incomingInt); //set hour to input
+		myRTC.setMonth(incomingInt); // Set months to input
 	}
 	else
 	{
 		Serial.println(F("	Invalid month entered"));
 	}
 	
-	Serial.println("	Enter Day"); //Prompt user input
+	Serial.println("	Enter Day"); // Prompt user input
 	getUserInput();
-	if(errorCheckUserInput(incomingInt, 1, 31)) //Error check day
+	if(errorCheckUserInput(incomingInt, 1, 31)) // Error check days
 	{
-		myRTC.setDate(incomingInt); //set hour to input
+		myRTC.setDate(incomingInt); // Set days to input
 	}
 	else
 	{
 		Serial.println(F("	Invalid day entered"));
 	}
 
-	Serial.println(F("	Enter Year (Last 2 digits)")); //Prompt user input
+	Serial.println(F("	Enter Year (Last 2 digits)")); // Prompt user input
 	getUserInput();
-	if(errorCheckUserInput(incomingInt, 1, 99)) //Error check days
+	if(errorCheckUserInput(incomingInt, 1, 99)) // Error check years
 	{
-		myRTC.setYear(incomingInt); //set hour to input
+		myRTC.setYear(incomingInt); // Set years to input
 	}
 	else
 	{
@@ -224,26 +235,26 @@ void setRtcDate() {
 void setDoorOpenCloseDuration() {	
 	Serial.println(F("----------------------------------------------------------------------"));
 
-	Serial.println(F("	(0). Set Open Duration")); //Prompt user input
-	Serial.println(F("	(1). Set Close Duration")); //Prompt user input
+	Serial.println(F("	(0). Set Open Duration")); // Prompt user input
+	Serial.println(F("	(1). Set Close Duration")); // Prompt user input
 	getUserInput();
 	if(errorCheckUserInput(incomingInt, 0, 1))
 	{
 		int memoryAddressToSet = incomingInt;
 		if(incomingInt) //1
 		{
-			Serial.println(F("		Enter close door time (seconds)")); //Prompt user
+			Serial.println(F("		Enter close door time (seconds)")); // Prompt user
 		}
 		else //0
 		{
-			Serial.println(F("		Enter open door time (seconds)")); //Prompt user
+			Serial.println(F("		Enter open door time (seconds)")); // Prompt user
 		}
 
 		getUserInput();
 
 		if(errorCheckUserInput(incomingInt, 1, 60))
 		{
-			EEPROM.write(memoryAddressToSet, incomingInt); //Set user input
+			EEPROM.write(memoryAddressToSet, incomingInt); // Set user input
 		}
 		else
 		{
@@ -322,20 +333,20 @@ void getDoorOpenCloseDuration() {
 }
 
 void setup() {
-	//writeEEPROM(); //Comment out after running once
+	//writeEEPROM(); // Comment out after running once
 	
-	Serial.begin(115200); //Start the serial port
+	Serial.begin(115200); // Start the serial port
 
-	fillArrayFromEeprom(); //Take the times out of eeprom and add to array used in checking if its time to open or close
+	fillArrayFromEeprom(); // Take the times out of eeprom and add to array used in checking if its time to open or close
 
-	Wire.begin(); //Start the I2C interface
+	Wire.begin(); // Start the I2C interface
 
-	myRTC.setClockMode(false);  //set to 24h format
+	myRTC.setClockMode(false);  // Set RTC to 24h format
 
-	pinMode(4, OUTPUT); //set pin mode for open
-	digitalWrite(4, LOW); //set default to off
-	pinMode(5, OUTPUT); //set pin mode for close
-	digitalWrite(5, LOW); //set default to off
+	pinMode(4, OUTPUT); // Set pin mode for open
+	digitalWrite(4, LOW); // Set default to off
+	pinMode(5, OUTPUT); // Set pin mode for close
+	digitalWrite(5, LOW); // Set default to off
 }
 
 void loop() {
@@ -344,41 +355,47 @@ void loop() {
 	int currentSecond;
 	int currentMonth;
 	
-	if (Serial.available() > 0) //Listen for input to bring up menu
+	if (Serial.available() > 0) // Listen for input to bring up menu
 	{
-		clearUserInput(); //Clear input used to bring up menu
+		clearUserInput(); // Clear input used to bring up menu
 		
-		printMenu(); //Print Options
+		printMenu(); // Print Options
 		getUserInput();
 
-		switch (incomingInt) //Get user command
+		switch (incomingInt) // Get user command
 		{
 			case 1:
-				setRtcTime(); //Call function for action
+				setRtcTime(); // Call function for action
 				break;
 			case 2:
-				setEepromData(); //Call function for action
+				setEepromData(); // Call function for action
 				break;
 			case 3:
-				toggleAutoPrint(); //Call function for action
+				toggleAutoPrint(); // Call function for action
 				break;
 			case 4:
-				setRtcDate(); //Call function for action
+				setRtcDate(); // Call function for action
 				break;
 			case 5:
-				setDoorOpenCloseDuration(); //Call function for action
+				setDoorOpenCloseDuration(); // Call function for action
 				break;
 			case 6:
-				getRtcTimeDate(); //Call function for action
+				getRtcTimeDate(); // Call function for action
 				break;
 			case 7:
-				getArrayElements(); //Call function for action
+				getArrayElements(); // Call function for action
 				break;
 			case 8:
-				getEepromData(); //Call function for action
+				getEepromData(); // Call function for action
 				break;
 			case 9:
-				getDoorOpenCloseDuration(); //Call function for action
+				getDoorOpenCloseDuration(); // Call function for action
+				break;
+			case 88:
+				commandDoor(true); // Call function for action
+				break;
+			case 99:
+				commandDoor(false); // Call function for action
 				break;
 			default:
 				Serial.println(F("Invalid Command"));
@@ -393,19 +410,19 @@ void loop() {
 
 	currentMonth = myRTC.getMonth(CenturyBit);
 
-  if(currentHour == sch[currentMonth][0] && currentMinute == sch[currentMonth][1] && currentSecond < EEPROM.read(0)) //Open
+  if(currentHour == sch[currentMonth][0] && currentMinute == sch[currentMonth][1] && currentSecond < EEPROM.read(0)) // Open
 	{
 		commandDoor(true);
   }
 	
-  if(currentHour == sch[currentMonth][2] && currentMinute == sch[currentMonth][3] && currentSecond < EEPROM.read(1)) //Close
+  if(currentHour == sch[currentMonth][2] && currentMinute == sch[currentMonth][3] && currentSecond < EEPROM.read(1)) // Close
 	{
 		commandDoor(false);
   }
 
 	if(printTime)
 	{
-		getRtcTimeDate(); //Print Current Time and Date
+		getRtcTimeDate(); // Print Current Time and Date
 	}
       
   delay(1000);
