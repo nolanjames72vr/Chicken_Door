@@ -1,38 +1,46 @@
-#include <DS3231.h>
-#include <Wire.h>
-#include <EEPROM.h>
+#include <DS3231.h> // RTC libary
+#include <Wire.h> // I2c libary
+#include <EEPROM.h> // EEPROM libary
 
-DS3231 myRTC;
+DS3231 myRTC; // Clock object
 
-int incomingInt;
+int incomingInt; // Stores user input from serial
 
-bool h12;
-bool hPM;
-bool CenturyBit;
+bool h12; // Not used in 24hr mode, used in 12hr mode when getting the time (true if in 12hr mode / false if in 24hr mode)
+bool hPM; // Not used in 24hr mode, used in 12hr mode when getting the time (true if pm / false if am)
+bool CenturyBit; // Gets toggled when the year transions from 1999 to 2000 (I think)
 
-bool printTime = false;
+bool printTime = false; // Toggle for printing the current date and time to the console at a 1hz rate
 
-//1d array makes filling EEPROM easy
-int sch1d[58] = {60, 60, 4, 5, 255, 255, 255, 255, 255, 255, 6, 30, 19, 0, 6, 30, 19, 0, 6, 30, 19, 30, 6, 30, 20, 30, 6, 0, 21, 0, 5, 30, 21, 30, 5, 45, 21, 30, 6, 15, 21, 0, 6, 30, 20, 45, 6, 30, 19, 30, 6, 30, 19, 30, 6, 30, 19, 0};
+//1d array makes filling EEPROM easy, this array and the writeEEPROM function are only needed once and then can be deleted or commented out
+const int sch1d[] PROGMEM = {60, 60, 4, 5, 255, 255, 255, 255, 255, 255, 6, 30, 19, 0, 6, 30, 19, 0, 6, 30, 19, 30, 6, 30, 20, 30, 6, 0, 21, 0, 5, 30, 21, 30, 5, 45, 21, 30, 6, 15, 21, 0, 6, 30, 20, 45, 6, 30, 19, 30, 6, 30, 19, 30, 6, 30, 19, 0};
+
+void writeEEPROM() {
+	for (int i = 0; i <= 57; i++)
+	{
+		EEPROM.write(i, sch1d[i]); // Fill EEPROM with contents of 1d array
+	}
+}
+
 //2d array makes checking if its open / close time easy (probably replace with a struct)
 int sch[13][4];
 
 void waitForUserInput() {
-	while (Serial.available() == 0) {} //Wait for user input
+	while (Serial.available() == 0) {} // Wait for user input
 }
 
 void clearUserInput() {
-	while (Serial.read() >= 0); //Clear user input
+	while (Serial.read() >= 0); // Clear user input
 }
 
-int getUserInput(){
-	waitForUserInput(); //Wait for user input
-	incomingInt = Serial.parseInt(); //Get user input
-	clearUserInput(); //Clear input
+int getUserInput() {
+	waitForUserInput(); // Wait for user input
+	incomingInt = Serial.parseInt(); // Get user input
+	clearUserInput(); // Clear input
 }
 
 void printMenu() {
-	//Print menu options
+	// Print menu options
 	Serial.println(F("(1). Set RTC Time"));
 	Serial.println(F("(2). Set EEPROM"));
 	Serial.println(F("(3). Toggle Auto Print Current Time and Date"));
@@ -44,30 +52,20 @@ void printMenu() {
 	Serial.println(F("(9). Get Door Open / Close Duration"));
 }
 
-bool errorCheckUserInput(int valueToSet, int lowLimit, int highLimit){
-	int validInput = false;
-	
-	if(valueToSet >= lowLimit && valueToSet <= highLimit)
-	{
-		validInput = true;
-	}
-	else
-	{
-		//Do nothing
-	}
-	
-	return validInput;
+bool errorCheckUserInput(int valueToSet, int lowLimit, int highLimit) {
+	return (valueToSet >= lowLimit && valueToSet <= highLimit);
 }
 
 void fillArrayFromEeprom() {
+	// Fill index 0 with -1 so the array index corresponds to the month number
 	sch[0][0] = -1;
 	sch[0][1] = -1;
 	sch[0][2] = -1;
 	sch[0][3] = -1;
 
-	int startIndex = 10;
+	int startIndex = 10; // Start storing open / close times at address 10 in EEPROM
 
-	for (int i = 1; i <= 12; i++) //Fill 2d array with contents from EEPROM
+	for (int i = 1; i <= 12; i++) // Fill 2d array with contents from EEPROM
 	{
 		for (int j = 0; j <= 3; j++)
 		{
@@ -80,23 +78,25 @@ void fillArrayFromEeprom() {
 void commandDoor(bool dir) {
 	int32_t doorOpenTime;
 	int doorPin;
-	if(dir) //if true, open door
+	if(dir) // If true, open door
 	{
-		doorOpenTime = EEPROM.read(0);
-		doorPin = EEPROM.read(2);
+		doorOpenTime = EEPROM.read(0); // Door open time is stored in EEPROM address 0
+		doorPin = EEPROM.read(2); // Door open time is stored in EEPROM address 2
 	}
-	else //if false, close door
+	else // If false, close door
 	{
-		doorOpenTime = EEPROM.read(1);
-		doorPin = EEPROM.read(3);
+		doorOpenTime = EEPROM.read(1); // Door open time is stored in EEPROM address 1
+		doorPin = EEPROM.read(3); // Door open time is stored in EEPROM address 3
 	}
 	
-	doorOpenTime = doorOpenTime * 1000; //convert ms to s
+	doorOpenTime = doorOpenTime * 1000; // Convert ms to s
 
-	digitalWrite(doorPin, HIGH);
-	delay(doorOpenTime);
+	digitalWrite(doorPin, HIGH); // Command motor driver to move door
+	delay(doorOpenTime); // Keep commanding for open / close duration
 	digitalWrite(doorPin, LOW);
 }
+
+//Start commenting from here
 
 //Menu Option 1
 void setRtcTime() {
@@ -321,15 +321,8 @@ void getDoorOpenCloseDuration() {
 	Serial.println(F("Send anything to bring up menu"));
 }
 
-void writeEEPROM() {
-	for (int i = 0; i <= 57; i++)
-	{
-		EEPROM.write(i, sch1d[i]); // Fill EEPROM with contents of 1d array
-	}
-}
-
 void setup() {
-	writeEEPROM(); //Comment out after running once
+	//writeEEPROM(); //Comment out after running once
 	
 	Serial.begin(115200); //Start the serial port
 
@@ -400,7 +393,7 @@ void loop() {
 
 	currentMonth = myRTC.getMonth(CenturyBit);
 
-  if(currentHour == sch[currentMonth][0] && currentMinute == sch[currentMonth][1] && currentSecond < EEPROM.read(0))  //Open
+  if(currentHour == sch[currentMonth][0] && currentMinute == sch[currentMonth][1] && currentSecond < EEPROM.read(0)) //Open
 	{
 		commandDoor(true);
   }
