@@ -54,7 +54,7 @@ void printMenu() {
 
 	Serial.println(F("Debug"));
 	Serial.println(F("	(11). Get EEPROM"));
-	Serial.println(F("	(22). Get 1D Array Elements"));
+	Serial.println(F("	(22). Get 2D Array Elements"));
 	Serial.println(F("	(33). Toggle Auto Print Current Time and Date"));
 	Serial.println(F("	(44). Set EEPROM (CAUTION)"));
 }
@@ -87,12 +87,12 @@ void setDoorOpenCloseTime(int i_month, bool b_open, int i_hour, int i_minute) {
 	int i_eepromAddress1;
 	int i_eepromAddress2;
 
-	if(b_open)
+	if(!b_open) //Set open time
 	{
 		i_eepromAddress1 = ((i_month-1)*4)+10; // Formula to convert array position to EEPROM address, see GitHub documentation 
 		i_eepromAddress2 = ((i_month-1)*4)+11;
 	}
-	else
+	else // Set close time
 	{
 		i_eepromAddress1 = ((i_month-1)*4)+12;
 		i_eepromAddress2 = ((i_month-1)*4)+13;
@@ -135,6 +135,8 @@ void commandDoor(bool b_dir) {
 	{
 		Serial.println(F("Door closed"));
 	}
+
+	Serial.println(F("Send anything to bring up menu"));
 }
 
 //Menu Option 1
@@ -200,7 +202,7 @@ void setDoorOpenCloseTimes() {
 	}
 
 	Serial.println(F("	(0). Set open time"));
-	Serial.println(F("  (1). Set close time"));
+	Serial.println(F("	(1). Set close time"));
 	getUserInput();
 	if(dataValid && errorCheckUserInput(i_userInput, 0, 1))
 	{
@@ -357,13 +359,13 @@ void getCurrentOpenCloseTime() {
 		if(i_userInput == 13)
 		{
 				i_month = i_currentMonth;
-				Serial.print(F("	Current Month ("));
-				Serial.print(i_month);
-				Serial.println(F(")"));
+				Serial.print(F("	Current Month: "));
+				Serial.println(i_month);
 		}
 		else
 		{
-			Serial.print(F("	Month "));
+			i_month = i_userInput;
+			Serial.print(F("	Month: "));
 			Serial.println(i_month);
 		}
 
